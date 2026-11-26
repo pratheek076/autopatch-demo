@@ -1,0 +1,21 @@
+# ============================================================
+# Agent Contract: DiagnosisAgent
+# ============================================================
+
+agent: DiagnosisAgent
+version: "1.0"
+description: >
+  Classifies a pipeline failure into a known type using LLM + heuristics.
+  Provides a confidence score used by downstream agents as a gate.
+
+preconditions:
+  logs_min_chars: 50                   # Must have some log content to analyze
+
+postconditions:
+  confidence_range: [0.0, 1.0]        # Must be a valid probability
+  failure_type_valid: true            # Must be one of the known FailureType values
+
+invariants:
+  read_only: true                      # Diagnosis agent NEVER writes to the repo
+  temperature: 0                       # LLM must use deterministic (temp=0) mode
+  model: gemini-1.5-flash             # Lightweight model — diagnosis is classification only

@@ -1,0 +1,46 @@
+# ============================================================
+# Agent Contract: PatchAgent
+# ============================================================
+# This YAML is the single source of truth for PatchAgent's
+# behavioral requirements. The guardrail layer reads this at
+# runtime and encodes these properties as Z3/OPA constraints.
+# ============================================================
+
+agent: PatchAgent
+version: "1.0"
+description: >
+  Generates a minimal code fix for a diagnosed CI/CD pipeline failure.
+  Only acts when confident in the diagnosis and when the failure type
+  is known and handleable.
+
+# --- Preconditions (must hold BEFORE the agent acts) ---
+preconditions:
+  diagnosis_confidence_min: 0.8        # LLM confidence score from DiagnosisAgent
+  failure_type_allowlist:              # Only attempt to patch these types
+    - flaky_test
+    - regression
+    - dependency
+
+# --- Postconditions (must hold AFTER the agent produces a patch) ---
+# These are encoded as Z3 invariants by z3_checker.py
+postconditions:
+  max_lines_changed: 150               # LLM patches beyond this are untrustworthy
+  min_coverage_delta: -2.0             # Coverage must not drop more than 2%
+  no_secrets_introduced: true          # Checked via heuristic + Z3
+  no_test_disabling: true              # Cannot skip/mark-skip existing tests
+
+# --- Invariants (structural properties always enforced) ---
+# These are encoded as OPA rules in specs/policies/pipeline_safety.rego
+invariants:
+  patch_must_be_minimal: true
+  patch_scope:                         # Patch can only touch these paths
+    - src/
+    - tests/
+    - requirements.txt
+    - pyproject.toml
+
+# --- Guardrail configuration ---
+guardrail:
+  z3_enabled: true
+  opa_enabled: true
+  block_on_failure: true               # If guardrail fails, block the patch

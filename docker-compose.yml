@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  autopatch:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      - redis
+      - opa
+    volumes:
+      - ./specs:/app/specs:ro
+    command: uvicorn src.autopatch.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build: .
+    env_file: .env
+    depends_on:
+      - redis
+      - opa
+    command: celery -A src.autopatch.worker worker --loglevel=info
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  opa:
+    image: openpolicyagent/opa:latest
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./specs/policies:/policies:ro
+    command: run --server --addr :8181 /policies
+
+  # Jenkins — local dev instance for testing the full loop
+  # Access at http://localhost:9090
+  # Initial admin password: docker exec autopatch-jenkins-1 cat /var/jenkins_home/secrets/initialAdminPassword
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    ports:
+      - "9090:8080"
+      - "50000:50000"           # Jenkins agent port
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - ./Jenkinsfile:/var/jenkins_home/workspace/autopatch/Jenkinsfile:ro
+    user: root
+
+  # Redis UI for debugging agent state
+  redis-insight:
+    image: redislabs/redisinsight:latest
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+
+volumes:
+  jenkins_home:

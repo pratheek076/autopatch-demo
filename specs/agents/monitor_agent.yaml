@@ -1,0 +1,26 @@
+# ============================================================
+# Agent Contract: MonitorAgent
+# ============================================================
+
+agent: MonitorAgent
+version: "1.0"
+description: >
+  Watches GitHub Actions for failed workflow runs and fetches
+  full structured failure information for downstream agents.
+
+preconditions:
+  workflow_conclusion: failure         # Only processes runs that failed
+  max_log_size_chars: 20000           # Truncate logs beyond this
+
+postconditions:
+  output_fields_required:             # All fields must be populated
+    - run_id
+    - repo
+    - branch
+    - commit_sha
+    - logs
+    - failed_step
+
+invariants:
+  read_only: true                      # Monitor agent NEVER writes to the repo
+  no_github_writes: true
