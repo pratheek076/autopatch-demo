@@ -5,23 +5,21 @@ Flow:
                                      ↓ FAIL
                                  open issue only
 """
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
 
-from src.autopatch.models.schemas import AgentState
-from src.autopatch.agents.monitor import monitor_node
 from src.autopatch.agents.diagnosis import diagnosis_node
+from src.autopatch.agents.monitor import monitor_node
 from src.autopatch.agents.patch import patch_node
 from src.autopatch.agents.verifier import verifier_node
-from src.autopatch.guardrails.z3_checker import z3_check
 from src.autopatch.guardrails.opa_checker import opa_check
-from src.autopatch.models.schemas import GuardrailVerdict
-
+from src.autopatch.guardrails.z3_checker import z3_check
+from src.autopatch.models.schemas import AgentGraphState, AgentState, GuardrailVerdict
 
 # ---------------------------------------------------------------------------
 # Guardrail node — runs both Z3 and OPA, gates the merge decision
 # ---------------------------------------------------------------------------
 
-def guardrail_node(state: dict) -> dict:
+def guardrail_node(state: AgentGraphState) -> AgentGraphState:
     """Formal guardrail: runs Z3 invariants + OPA policies on the candidate patch."""
     agent_state: AgentState = state["state"]
     patch = agent_state.patch
@@ -50,18 +48,18 @@ def guardrail_node(state: dict) -> dict:
     return {**state, "state": agent_state.model_copy(update={"guardrail_verdict": verdict})}
 
 
-def _route_after_guardrail(state: dict) -> str:
+def _route_after_guardrail(state: AgentGraphState) -> str:
     """Conditional edge: pass → verifier, fail → reject."""
-    verdict: GuardrailVerdict = state["state"].guardrail_verdict
-    return "verifier" if verdict and verdict.passed else END
+    verdict = state["state"].guardrail_verdict
+    return "verifier" if verdict is not None and verdict.passed else END
 
 
 # ---------------------------------------------------------------------------
 # Graph assembly
 # ---------------------------------------------------------------------------
 
-def build_graph() -> StateGraph:
-    graph = StateGraph(dict)
+def build_graph():
+    graph = StateGraph(AgentGraphState)
 
     graph.add_node("monitor", monitor_node)
     graph.add_node("diagnosis", diagnosis_node)

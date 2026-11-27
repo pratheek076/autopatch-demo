@@ -5,9 +5,12 @@ and evaluates it against the Rego policies in specs/policies/.
 
 OPA runs as a sidecar (see docker-compose.yml).
 """
+import json
 import logging
 import os
+
 import httpx
+
 from src.autopatch.models.schemas import CandidatePatch
 
 logger = logging.getLogger(__name__)
@@ -50,6 +53,6 @@ def opa_check(patch: CandidatePatch) -> dict:
     except httpx.ConnectError:
         logger.warning("[OPA] Could not connect to OPA server — skipping policy check")
         return {"passed": True, "violations": [], "warning": "OPA unavailable — policy check skipped"}
-    except Exception as e:
+    except (httpx.HTTPError, json.JSONDecodeError) as e:
         logger.error(f"[OPA] Unexpected error: {e}")
-        return {"passed": False, "violations": [f"OPA check error: {str(e)}"]}
+        return {"passed": False, "violations": [f"OPA check error: {e!s}"]}

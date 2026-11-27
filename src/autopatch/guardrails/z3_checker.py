@@ -10,11 +10,11 @@ Invariants checked:
   4. Patch must not disable test stages
 """
 import logging
-from z3 import (
-    Int, Bool, Solver, And, Or, Not, sat, unsat, ArithRef, BoolRef
-)
-from src.autopatch.models.schemas import CandidatePatch
+
+from z3 import Bool, Int, Not, Solver, sat
+
 from src.autopatch.guardrails.spec_loader import load_agent_spec
+from src.autopatch.models.schemas import CandidatePatch
 
 logger = logging.getLogger(__name__)
 

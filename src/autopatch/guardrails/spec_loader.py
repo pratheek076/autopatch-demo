@@ -3,9 +3,9 @@
 The YAML contracts are the single source of truth for agent requirements.
 Z3 and OPA rules are derived from them at runtime.
 """
-import os
 from functools import lru_cache
 from pathlib import Path
+
 import yaml
 
 SPECS_DIR = Path(__file__).parents[3] / "specs" / "agents"

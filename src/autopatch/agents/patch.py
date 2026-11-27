@@ -3,13 +3,14 @@
 Only attempts to patch if diagnosis confidence meets the threshold
 defined in the agent's YAML contract (specs/agents/patch_agent.yaml).
 """
+import json
 import logging
-import os
-from langchain_google_genai import ChatGoogleGenerativeAI
+
 from langchain_core.prompts import ChatPromptTemplate
-from src.autopatch.models.schemas import AgentState, CandidatePatch, FailureType
+
 from src.autopatch.agents._llm_utils import invoke_llm_with_fallback, parse_llm_json
 from src.autopatch.guardrails.spec_loader import load_agent_spec
+from src.autopatch.models.schemas import AgentGraphState, AgentState, CandidatePatch
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ Respond in JSON:
 ])
 
 
-def patch_node(state: dict) -> dict:
+def patch_node(state: AgentGraphState) -> AgentGraphState:
     """Generates a candidate patch, respecting the agent contract preconditions."""
     agent_state: AgentState = state["state"]
     failure = agent_state.failure

@@ -1,12 +1,13 @@
 """Monitor Agent — fetches pipeline failure details from Jenkins."""
 import logging
-from src.autopatch.models.schemas import AgentState, PipelineFailure, FailureType
+
 from src.autopatch.integrations.jenkins import JenkinsClient
+from src.autopatch.models.schemas import AgentGraphState, AgentState, PipelineFailure
 
 logger = logging.getLogger(__name__)
 
 
-def monitor_node(state: dict) -> dict:
+def monitor_node(state: AgentGraphState) -> AgentGraphState:
     """
     Fetches full console log and metadata for a failed Jenkins build.
     Populates AgentState.failure.

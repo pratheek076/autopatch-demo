@@ -6,19 +6,18 @@ Configure Jenkins to call this via:
 
 OpenAPI docs auto-served at http://localhost:8000/docs
 """
-import hashlib
 import hmac
 import logging
 import os
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 load_dotenv()
 
-from src.autopatch.models.schemas import AgentState
 from src.autopatch.agents.graph import build_graph
+from src.autopatch.models.schemas import AgentState
 
 logging.basicConfig(
     level=logging.INFO,

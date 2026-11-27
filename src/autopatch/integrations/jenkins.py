@@ -7,11 +7,13 @@ Wraps Jenkins API calls needed by the Monitor Agent:
 
 Jenkins REST API docs: https://www.jenkins.io/doc/book/using/remote-access-api/
 """
+import json
 import logging
 import os
 import re
-import httpx
 from dataclasses import dataclass
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +68,7 @@ class JenkinsClient:
         try:
             log = self._get(path).text
             return log[:20000]  # Cap at 20k chars for LLM token budget
-        except Exception as e:
+        except httpx.HTTPError as e:
             logger.error(f"Failed to fetch console log: {e}")
             return f"[Log fetch failed: {e}]"
 
@@ -82,8 +84,8 @@ class JenkinsClient:
             for stage in data.get("stages", []):
                 if stage.get("status") == "FAILED":
                     return stage.get("name", "unknown stage")
-        except Exception:
-            pass
+        except (httpx.HTTPError, json.JSONDecodeError) as e:
+            logger.info(f"Workflow API unavailable; falling back to console log: {e}")
 
         # Fallback: parse console log for failure markers
         log = self.get_console_log(job_name, build_number)
@@ -126,7 +128,7 @@ class JenkinsClient:
             # Fetch the next build number
             info = self._get(f"/job/{job_name}/api/json").json()
             return info.get("nextBuildNumber")
-        except Exception as e:
+        except (httpx.HTTPError, json.JSONDecodeError) as e:
             logger.error(f"Failed to trigger Jenkins build: {e}")
             return None
 

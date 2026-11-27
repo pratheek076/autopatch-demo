@@ -1,6 +1,7 @@
 """Pydantic schemas — shared data models across all agents."""
 from enum import Enum
-from typing import Optional
+from typing import Any, TypedDict
+
 from pydantic import BaseModel, Field
 
 
@@ -50,12 +51,18 @@ class GuardrailVerdict(BaseModel):
 
 class AgentState(BaseModel):
     """Shared state passed through the LangGraph agent graph."""
-    failure: Optional[PipelineFailure] = None
-    patch: Optional[CandidatePatch] = None
-    guardrail_verdict: Optional[GuardrailVerdict] = None
-    pr_url: Optional[str] = None
-    issue_url: Optional[str] = None
+    failure: PipelineFailure | None = None
+    patch: CandidatePatch | None = None
+    guardrail_verdict: GuardrailVerdict | None = None
+    pr_url: str | None = None
+    issue_url: str | None = None
     status: str = "pending"   # pending | diagnosed | patched | verified | rejected | done
+
+
+class AgentGraphState(TypedDict):
+    """Input and state channels passed between LangGraph nodes."""
+    state: AgentState
+    raw_payload: dict[str, Any]
 
 
 class WebhookPayload(BaseModel):

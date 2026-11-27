@@ -1,10 +1,11 @@
 """GitHub API client — wraps PyGithub for clean agent-facing methods."""
-import base64
 import io
 import logging
 import os
 import zipfile
 
+import httpx
+import requests
 from github import Github, GithubException
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ class GitHubClient:
     def __init__(self):
         token = os.getenv("GITHUB_TOKEN")
         if not token:
-            raise EnvironmentError("GITHUB_TOKEN is not set")
+            raise OSError("GITHUB_TOKEN is not set")
         self._gh = Github(token)
         owner = os.getenv("GITHUB_REPO_OWNER", "")
         repo = os.getenv("GITHUB_REPO_NAME", "")
@@ -26,14 +27,23 @@ class GitHubClient:
             run = self._repo.get_workflow_run(int(run_id))
             # GitHub API returns a redirect URL for logs (zip archive)
             log_url = run.logs_url
-            import httpx, io, zipfile
-            resp = httpx.get(log_url, headers={"Authorization": f"token {os.getenv('GITHUB_TOKEN')}"}, follow_redirects=True)
+            resp = httpx.get(
+                log_url,
+                headers={"Authorization": f"token {os.getenv('GITHUB_TOKEN')}"},
+                follow_redirects=True,
+            )
             with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
                 logs = []
                 for name in z.namelist():
                     logs.append(f"=== {name} ===\n" + z.read(name).decode("utf-8", errors="replace"))
             return "\n".join(logs)[:20000]  # Cap at 20k chars
-        except Exception as e:
+        except (
+            GithubException,
+            requests.RequestException,
+            httpx.HTTPError,
+            zipfile.BadZipFile,
+            ValueError,
+        ) as e:
             logger.error(f"Failed to fetch logs for run {run_id}: {e}")
             return f"[Log fetch failed: {e}]"
 
@@ -46,7 +56,7 @@ class GitHubClient:
                     if step.conclusion == "failure":
                         return f"{job.name} / {step.name}"
             return "unknown"
-        except Exception as e:
+        except (GithubException, requests.RequestException, ValueError) as e:
             logger.error(f"Failed to get failed step for run {run_id}: {e}")
             return "unknown"
 

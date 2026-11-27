@@ -3,13 +3,17 @@
 Only reached if the formal guardrail passes.
 """
 import logging
-from src.autopatch.models.schemas import AgentState
+
+import requests
+from github import GithubException
+
 from src.autopatch.integrations.github import GitHubClient
+from src.autopatch.models.schemas import AgentGraphState, AgentState
 
 logger = logging.getLogger(__name__)
 
 
-def verifier_node(state: dict) -> dict:
+def verifier_node(state: AgentGraphState) -> AgentGraphState:
     """Applies the guardrail-approved patch: creates a branch and opens a PR."""
     agent_state: AgentState = state["state"]
     patch = agent_state.patch
@@ -17,8 +21,6 @@ def verifier_node(state: dict) -> dict:
 
     if patch is None or failure is None:
         return state
-
-    gh = GitHubClient()
 
     branch_name = f"autopatch/{failure.run_id}"
     pr_title = f"[AutoPatch] Fix {failure.failure_type.value} in `{patch.file_path}`"
@@ -36,6 +38,7 @@ def verifier_node(state: dict) -> dict:
     )
 
     try:
+        gh = GitHubClient()
         pr_url = gh.create_patch_pr(
             base_branch=failure.branch,
             new_branch=branch_name,
@@ -47,6 +50,6 @@ def verifier_node(state: dict) -> dict:
         )
         logger.info(f"[Verifier] PR opened: {pr_url}")
         return {**state, "state": agent_state.model_copy(update={"pr_url": pr_url, "status": "done"})}
-    except Exception as e:
+    except (GithubException, requests.RequestException, OSError) as e:
         logger.error(f"[Verifier] Failed to create PR: {e}")
         return {**state, "state": agent_state.model_copy(update={"status": "error"})}

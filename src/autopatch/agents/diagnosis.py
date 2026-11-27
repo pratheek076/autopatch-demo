@@ -1,10 +1,11 @@
 """Diagnosis Agent — classifies the failure type using LLM + heuristics."""
+import json
 import logging
-import os
-from langchain_google_genai import ChatGoogleGenerativeAI
+
 from langchain_core.prompts import ChatPromptTemplate
-from src.autopatch.models.schemas import AgentState, FailureType
+
 from src.autopatch.agents._llm_utils import invoke_llm_with_fallback, parse_llm_json
+from src.autopatch.models.schemas import AgentGraphState, AgentState, FailureType
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ Respond in JSON: {{"type": "<category>", "confidence": 0.0-1.0, "reason": "<one 
 ])
 
 
-def diagnosis_node(state: dict) -> dict:
+def diagnosis_node(state: AgentGraphState) -> AgentGraphState:
     """Uses an LLM to classify the type of CI/CD failure from logs."""
     agent_state: AgentState = state["state"]
     failure = agent_state.failure
