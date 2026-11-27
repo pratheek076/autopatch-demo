@@ -22,6 +22,8 @@ Rules:
 - Do NOT disable or skip tests
 - Do NOT introduce hardcoded secrets or credentials
 - Do NOT change unrelated files
+- Only change dependencies when the failure log shows a dependency problem
+- For assertion failures, target the application code responsible for the incorrect result
 Respond in JSON:
 {{
   "file_path": "<relative path>",
@@ -61,7 +63,7 @@ def patch_node(state: AgentGraphState) -> AgentGraphState:
         {
             "failure_type": failure.failure_type.value,
             "failed_step": failure.failed_step,
-            "logs": failure.logs[:6000],
+            "logs": failure.logs[-6000:],
         },
         temperature=0.2,
     )
