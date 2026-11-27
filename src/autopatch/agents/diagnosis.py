@@ -36,7 +36,7 @@ def diagnosis_node(state: AgentGraphState) -> AgentGraphState:
         DIAGNOSIS_PROMPT,
         {
             "failed_step": failure.failed_step,
-            "logs": failure.logs[:4000],  # Token budget — truncate long logs
+            "logs": failure.logs[-4000:],  # Keep the failure details at the end of the log
         },
         temperature=0,
     )

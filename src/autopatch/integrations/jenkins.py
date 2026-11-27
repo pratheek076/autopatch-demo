@@ -102,7 +102,7 @@ class JenkinsClient:
             last_built = action.get("lastBuiltRevision", {})
             branches = last_built.get("branch", [])
             if branches:
-                branch = branches[0].get("name", "unknown").replace("origin/", "")
+                branch = _normalize_branch_name(branches[0].get("name", "unknown"))
                 commit_sha = branches[0].get("SHA1", "")
                 break
 
@@ -156,3 +156,11 @@ def _parse_failed_stage_from_log(log: str) -> str:
             return stages_seen[-1]
 
     return stages_seen[-1] if stages_seen else "unknown"
+
+
+def _normalize_branch_name(branch: str) -> str:
+    """Convert Jenkins remote refs to the branch name GitHub expects."""
+    for prefix in ("refs/remotes/origin/", "refs/remotes/", "refs/heads/", "origin/"):
+        if branch.startswith(prefix):
+            return branch[len(prefix):]
+    return branch
