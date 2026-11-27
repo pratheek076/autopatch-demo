@@ -42,7 +42,7 @@ pipeline {
             post {
                 always {
                     junit 'test-results.xml'
-                    publishCoverage adapters: [coberturaAdapter('coverage.xml')]
+                    archiveArtifacts artifacts: 'coverage.xml', fingerprint: true
                 }
             }
         }

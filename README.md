@@ -134,6 +134,9 @@ uvicorn src.autopatch.main:app --host 0.0.0.0 --port 8000
 If both services run through Compose, Jenkins can instead use
 `http://autopatch:8000`.
 
+The pipeline publishes JUnit results and archives `coverage.xml` as a build
+artifact, so coverage reporting does not require an additional Jenkins plugin.
+
 ## Tech Stack
 
 | Component | Technology |

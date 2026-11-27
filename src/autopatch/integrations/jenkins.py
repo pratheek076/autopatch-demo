@@ -67,7 +67,7 @@ class JenkinsClient:
         path = f"/job/{job_name}/{build_number}/consoleText"
         try:
             log = self._get(path).text
-            return log[:20000]  # Cap at 20k chars for LLM token budget
+            return log[-20000:]  # Keep the latest output, where build failures are reported
         except httpx.HTTPError as e:
             logger.error(f"Failed to fetch console log: {e}")
             return f"[Log fetch failed: {e}]"
@@ -144,8 +144,7 @@ class JenkinsClient:
 
 def _parse_failed_stage_from_log(log: str) -> str:
     """Heuristic: find the stage that Jenkins reported as failed."""
-    # Jenkins declarative pipeline prints: [Pipeline] stage (Stage Name)
-    stage_pattern = re.compile(r"\[Pipeline\] stage\s*\n?\[Pipeline\] \{ \((.+?)\)")
+    stage_pattern = re.compile(r"\[Pipeline\] \{ \((.+?)\)")
     error_pattern = re.compile(r"ERROR|FAILED|error:", re.IGNORECASE)
 
     stages_seen = []
