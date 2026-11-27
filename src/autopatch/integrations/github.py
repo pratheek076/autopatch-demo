@@ -21,6 +21,15 @@ class GitHubClient:
         repo = os.getenv("GITHUB_REPO_NAME", "")
         self._repo = self._gh.get_repo(f"{owner}/{repo}")
 
+    def get_file_content(self, file_path: str, ref: str) -> str:
+        """Return a repository file's text at a branch or commit ref."""
+        file_content = self._repo.get_contents(file_path, ref=ref)
+        if isinstance(file_content, list):
+            raise TypeError(f"Expected a file at {file_path}, found a directory")
+        if file_content.decoded_content is None:
+            raise ValueError(f"Could not decode repository file {file_path}")
+        return file_content.decoded_content.decode("utf-8")
+
     def get_run_logs(self, run_id: str) -> str:
         """Download and return the text logs for a workflow run."""
         try:
