@@ -38,7 +38,10 @@ services:
   # Access at http://localhost:9090
   # Initial admin password: docker exec autopatch-jenkins-1 cat /var/jenkins_home/secrets/initialAdminPassword
   jenkins:
-    image: jenkins/jenkins:lts-jdk17
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    image: autopatch-jenkins:local
     ports:
       - "9090:8080"
       - "50000:50000"           # Jenkins agent port

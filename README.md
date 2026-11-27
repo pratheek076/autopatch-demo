@@ -110,6 +110,30 @@ pytest tests/test_guardrails.py -v
 #    http://localhost:8000/docs
 ```
 
+### Jenkins local runner
+
+The Compose-managed Jenkins image includes Python 3.12, which the `Jenkinsfile`
+uses to create its virtual environment. Build and start it with:
+
+```bash
+docker compose up -d --build jenkins
+```
+
+Rebuild the Jenkins image after changing `Dockerfile.jenkins`. For Jenkins
+agents managed outside this Compose setup, install Python 3.12 or newer on the
+agent that runs the pipeline.
+
+If AutoPatch runs directly on your host while Jenkins runs in Docker, bind it
+to an address reachable from the container and set `AUTOPATCH_WEBHOOK_URL` in
+Jenkins to `http://host.docker.internal:8000`:
+
+```bash
+uvicorn src.autopatch.main:app --host 0.0.0.0 --port 8000
+```
+
+If both services run through Compose, Jenkins can instead use
+`http://autopatch:8000`.
+
 ## Tech Stack
 
 | Component | Technology |

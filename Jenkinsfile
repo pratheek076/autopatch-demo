@@ -19,7 +19,7 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'python3 -m venv .venv && .venv/bin/pip install -r requirements.txt'
+                sh 'python3 -m venv --clear .venv && .venv/bin/pip install -r requirements.txt'
             }
         }
 
@@ -54,23 +54,27 @@ pipeline {
             script {
                 def autopatchUrl = env.AUTOPATCH_WEBHOOK_URL ?: 'http://localhost:8000'
                 def token = env.AUTOPATCH_WEBHOOK_TOKEN ?: ''
-                httpRequest(
-                    url: "${autopatchUrl}/webhook/jenkins?token=${token}",
-                    httpMode: 'POST',
-                    contentType: 'APPLICATION_JSON',
-                    requestBody: groovy.json.JsonOutput.toJson([
-                        name : env.JOB_NAME,
-                        build: [
-                            number: env.BUILD_NUMBER.toInteger(),
-                            phase : 'FINALIZED',
-                            status: 'FAILURE',
-                            scm   : [
-                                branch: env.GIT_BRANCH,
-                                url   : env.GIT_URL,
+                try {
+                    httpRequest(
+                        url: "${autopatchUrl}/webhook/jenkins?token=${token}",
+                        httpMode: 'POST',
+                        contentType: 'APPLICATION_JSON',
+                        requestBody: groovy.json.JsonOutput.toJson([
+                            name : env.JOB_NAME,
+                            build: [
+                                number: env.BUILD_NUMBER.toInteger(),
+                                phase : 'FINALIZED',
+                                status: 'FAILURE',
+                                scm   : [
+                                    branch: env.GIT_BRANCH,
+                                    url   : env.GIT_URL,
+                                ]
                             ]
-                        ]
-                    ])
-                )
+                        ])
+                    )
+                } catch (hudson.AbortException e) {
+                    echo "AutoPatch webhook notification failed: ${e.message}"
+                }
             }
         }
         success {

@@ -4,7 +4,7 @@ import os
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from src.autopatch.models.schemas import AgentState, FailureType
-from src.autopatch.agents._llm_utils import parse_llm_json
+from src.autopatch.agents._llm_utils import invoke_llm_with_fallback, parse_llm_json
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +31,14 @@ def diagnosis_node(state: dict) -> dict:
     if failure is None:
         return state
 
-    llm = ChatGoogleGenerativeAI(model="gemini-3.8-flash", temperature=0)
-    chain = DIAGNOSIS_PROMPT | llm
-
-    response = chain.invoke({
-        "failed_step": failure.failed_step,
-        "logs": failure.logs[:4000],  # Token budget — truncate long logs
-    })
+    response = invoke_llm_with_fallback(
+        DIAGNOSIS_PROMPT,
+        {
+            "failed_step": failure.failed_step,
+            "logs": failure.logs[:4000],  # Token budget — truncate long logs
+        },
+        temperature=0,
+    )
 
     try:
         result = parse_llm_json(response.content)

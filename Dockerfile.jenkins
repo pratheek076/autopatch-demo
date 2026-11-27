@@ -1,0 +1,26 @@
+FROM python:3.12-slim-bookworm AS python
+
+FROM jenkins/jenkins:lts-jdk17
+
+USER root
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libbz2-1.0 \
+    libexpat1 \
+    libffi8 \
+    libgdbm6 \
+    liblzma5 \
+    libncursesw6 \
+    libreadline8 \
+    libsqlite3-0 \
+    libssl3 \
+    libtirpc3 \
+    libuuid1 \
+    zlib1g \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=python /usr/local/ /usr/local/
+
+RUN python3 --version && python3 -m venv /tmp/python-check && rm -rf /tmp/python-check
+
+USER jenkins
