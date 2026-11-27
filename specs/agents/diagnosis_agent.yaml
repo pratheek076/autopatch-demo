@@ -18,4 +18,4 @@ postconditions:
 invariants:
   read_only: true                      # Diagnosis agent NEVER writes to the repo
   temperature: 0                       # LLM must use deterministic (temp=0) mode
-  model: gemini-1.5-flash             # Lightweight model — diagnosis is classification only
+  model: gemini-3.8-flash             # Lightweight model — diagnosis is classification only

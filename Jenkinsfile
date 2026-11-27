@@ -19,25 +19,25 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'pip install -r requirements.txt'
+                sh 'python3 -m venv .venv && .venv/bin/pip install -r requirements.txt'
             }
         }
 
         stage('Lint') {
             steps {
-                sh 'ruff check src/'
+                sh '.venv/bin/ruff check src/'
             }
         }
 
         stage('Type Check') {
             steps {
-                sh 'mypy src/'
+                sh '.venv/bin/mypy src/'
             }
         }
 
         stage('Test') {
             steps {
-                sh 'pytest tests/ --cov=src --cov-report=xml -v --junitxml=test-results.xml'
+                sh '.venv/bin/pytest tests/ --cov=src --cov-report=xml -v --junitxml=test-results.xml'
             }
             post {
                 always {

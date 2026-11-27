@@ -8,6 +8,7 @@ import os
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from src.autopatch.models.schemas import AgentState, CandidatePatch, FailureType
+from src.autopatch.agents._llm_utils import parse_llm_json
 from src.autopatch.guardrails.spec_loader import load_agent_spec
 
 logger = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ def patch_node(state: dict) -> dict:
         logger.info(f"[Patch] Skipping — failure type {failure.failure_type} not in allowlist")
         return {**state, "state": agent_state.model_copy(update={"status": "skipped_unknown_type"})}
 
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0.2)
+    llm = ChatGoogleGenerativeAI(model="gemini-3.8-flash", temperature=0.2)
     chain = PATCH_PROMPT | llm
 
     response = chain.invoke({
@@ -63,9 +64,8 @@ def patch_node(state: dict) -> dict:
         "logs": failure.logs[:6000],
     })
 
-    import json
     try:
-        result = json.loads(response.content)
+        result = parse_llm_json(response.content)
         patch = CandidatePatch(
             failure_id=failure.run_id,
             file_path=result["file_path"],

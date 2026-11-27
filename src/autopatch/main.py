@@ -20,6 +20,10 @@ load_dotenv()
 from src.autopatch.models.schemas import AgentState
 from src.autopatch.agents.graph import build_graph
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -82,9 +86,16 @@ async def jenkins_webhook(request: Request):
     }
 
     initial_state = AgentState()
-    agent_graph.invoke({"state": initial_state, "raw_payload": normalized})
+    result = agent_graph.invoke({"state": initial_state, "raw_payload": normalized})
+    final_state: AgentState = result["state"]
 
-    return JSONResponse({"status": "accepted", "job": job_name, "build": build_number})
+    return JSONResponse({
+        "status": final_state.status,
+        "job": job_name,
+        "build": build_number,
+        "failure_type": final_state.failure.failure_type.value if final_state.failure else None,
+        "pr_url": final_state.pr_url,
+    })
 
 
 # ---------------------------------------------------------------------------
